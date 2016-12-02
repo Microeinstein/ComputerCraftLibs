@@ -10,6 +10,7 @@ Name|Description
 ----|-----------
 STD|Adds functions to these namespaces: `term`, `fs`, `math`, `string`, `table` and others
 STDTurtle|Adds functions to `turtle` namespace
+HGet|Allows downloading (text-based) files with an HTTP GET request (like wget)
 Forms|Allows the creation of (static) windows with **Buttons**, **Panels**, single-line or multi-line **TextBoxes**, **Labels**, **Images** and **Custom items**.
 
 ### Commit frequency
