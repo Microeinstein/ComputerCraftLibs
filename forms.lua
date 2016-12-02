@@ -496,30 +496,30 @@ function TextBox.caretMove(self, diffX, diffY, fixed, uncheck)
 	if not fixed then
 		if not uncheck then
 			self._cX = self._cX + diffX
-			if self._cX > table.len(self:line()) then
+			if self._cX > #(self:line()) then
 				if self._cY < lns - 1 then
-					self._cX = self._cX - table.len(self:line()) - 1
+					self._cX = self._cX - #(self:line()) - 1
 					self._cY = self._cY + 1
 				else
-					self._cX = table.len(self:line())
+					self._cX = #(self:line())
 				end
 			elseif self._cX < 0 then
 				if self._cY > 0 then
-					self._cX = table.len(self:line(-1)) + self._cX + 1
+					self._cX = #(self:line(-1)) + self._cX + 1
 					self._cY = self._cY - 1
 				else
 					self._cX = 0
 				end
 			end
 			self._cY = math.between(0, self._cY + diffY, lns - 1)
-			self._cX = math.between(0, self._cX, table.len(self:line()))
+			self._cX = math.between(0, self._cX, #(self:line()))
 		else
 			self._cY = math.between(0, self._cY + diffY, lns - 1)
-			self._cX = math.between(0, self._cX + diffX, table.len(self:line()))
+			self._cX = math.between(0, self._cX + diffX, #(self:line()))
 		end
 	else
 		self._cY = math.between(0, self._vY + diffY, lns - 1)
-		self._cX = math.between(0, self._vX + diffX, table.len(self:line()))
+		self._cX = math.between(0, self._vX + diffX, #(self:line()))
 	end
 	
 	--Move viewing position
@@ -545,7 +545,7 @@ function TextBox.caretMove(self, diffX, diffY, fixed, uncheck)
 		--	self._vY = math.max(0, self._vY - 1)
 		end
 	end
-	self._vX = math.between(0, self._vX, table.len(self:line()) - self.width + (self.width > 2 and 1 or 0))
+	self._vX = math.between(0, self._vX, #(self:line()) - self.width + (self.width > 2 and 1 or 0))
 	self._vY = math.between(0, self._vY, lns - self.height)
 	
 	--term.log(false, self._vX, self._vY, self._cX, self._cY)
@@ -587,7 +587,7 @@ function TextBox.handleKey(self, key, pressing)
 		self:newLine()
 		
 	elseif key == keys.delete then
-		if self._cX < table.len(self:line()) then
+		if self._cX < #(self:line()) then
 			local p1, p2 = string.split(self:line(), self._cX)
 			self:line(0, p1 .. p2:sub(2, #p2))
 			self:caretMove()
@@ -602,7 +602,7 @@ function TextBox.handleKey(self, key, pressing)
 		self:caretMove(-self._cX)
 		
 	elseif key == keys["end"] then
-		self:caretMove(table.len(self:line()) - self._cX)
+		self:caretMove(#(self:line()) - self._cX)
 		
 	elseif key == keys.pageUp then
 		self:caretMove(0, -self.height)
