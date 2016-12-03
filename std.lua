@@ -12,17 +12,24 @@ function term.input(text, prefix)
 	term.write(text..prefix)
 	return prefix..io.read()
 end
-function term.printc(fg, bg, ...)
-	local fc, bc = term.getTextColor(), term.getBackgroundColor()
-	term.setTextColor(fg or fc)
-	term.setBackgroundColor(bg or bc)
-	print(unpack(arg))
-	term.setTextColor(fc)
-	term.setBackgroundColor(bc)
+function term.lineBefore()
 	local w, h = term.getSize()
 	print(string.rep(" ", w))
 	local x, y = term.getCursorPos()
 	term.setCursorPos(x, y - 1)
+end
+function term.printc(fg, bg, ...)
+	if term.isColor() then
+		local fc, bc = term.getTextColor(), term.getBackgroundColor()
+		term.setTextColor(fg or fc)
+		term.setBackgroundColor(bg or bc)
+		print(unpack(arg))
+		term.setTextColor(fc)
+		term.setBackgroundColor(bc)
+	else
+		print(unpack(arg))
+	end
+	term.lineBefore()
 end
 function term.log(pause, ...)
 	if arg then
@@ -37,7 +44,7 @@ function term.log(pause, ...)
 		
 		term.write(table.concat(table.allToString(arg), " "))
 		if pause then
-			term.pause()
+			term.pause(nil, true)
 		end
 		
 		term.setCursorPos(oldX, oldY)
@@ -45,8 +52,13 @@ function term.log(pause, ...)
 		term.setBackgroundColor(oldB)
 	end
 end
-function term.pause(text)
-	term.write(tostring(text or "..."))
+function term.pause(text, useWrite)
+	if not useWrite then
+		print(tostring(text or "..."))
+		term.lineBefore()
+	else
+		term.write(tostring(text or "..."))
+	end
 	while true do
 		local event, p1, p2, p3, p4, p5 = os.pullEvent()
 		if event == "key" then
@@ -421,6 +433,6 @@ function rPrint(s, l, i)		-- recursive Print (structure, limit, indent)
 end
 function objDebug(obj, prefix)
 	rPrint(obj, nil, prefix)
-	print("OBJECT END")
+	term.log(false, "OBJECT END")
 	os.sleep(1)
 end
