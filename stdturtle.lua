@@ -2,6 +2,12 @@
 
 loadfile("std")()
 
+__turtle = {}
+
+if not turtle then
+	error("This is not a turtle.")
+end
+
 turtle.faces = turtle.faces or {
 	N = 0,
 	E = 1,
@@ -87,7 +93,7 @@ end
 function turtle.pull(x, y, face, amount)
 	local r
 	turtle.setSlotTemp(x, y)
-	if amount then
+	if amount ~= nil then
 		if face == 4 then
 			r = turtle.suckUp(amount)
 		elseif face == 5 then
@@ -111,7 +117,7 @@ end
 function turtle.push(x, y, face, amount)
 	local r
 	turtle.setSlotTemp(x, y)
-	if amount then
+	if amount ~= nil then
 		if face == 4 then
 			r = turtle.dropUp(amount)
 		elseif face == 5 then

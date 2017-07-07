@@ -1,5 +1,7 @@
 --STD addon by Microeinstein
---rPrint is not mine
+--rPrint is not mine, but I modified it a bit
+
+__std = {}
 
 function term.wash()
 	term.setBackgroundColor(colors.black)
@@ -32,37 +34,43 @@ function term.printc(fg, bg, ...)
 	term.lineBefore()
 end
 function term.log(pause, ...)
-	if arg then
-		local oldX, oldY = term.getCursorPos()
-		local oldF, oldB = term.getTextColor(), term.getBackgroundColor()
-		local sx, sy = term.getSize()
-		
-		paintutils.drawLine(1, sy, sx, sy, colors.black)
-		term.setCursorPos(1, sy)
-		term.setTextColor(colors.white)
-		term.setBackgroundColor(colors.black)
-		
-		term.write(table.concat(table.allToString(arg), " "))
-		if pause then
-			term.pause(nil, true)
-		end
-		
-		term.setCursorPos(oldX, oldY)
-		term.setTextColor(oldF)
-		term.setBackgroundColor(oldB)
+	local oldX, oldY = term.getCursorPos()
+	local oldF, oldB = term.getTextColor(), term.getBackgroundColor()
+	local sx, sy = term.getSize()
+	
+	paintutils.drawLine(1, sy, sx, sy, colors.black)
+	term.setCursorPos(1, sy)
+	term.setTextColor(colors.white)
+	term.setBackgroundColor(colors.black)
+	
+	local txt = table.concat(table.allToString(arg), " ")
+	term.write(#txt > sx and string.negSub(txt, 1, #txt - sx) or txt)
+	if pause then
+		term.pause("", true)
 	end
+	
+	--paintutils.drawLine(1, sy, sx, sy, colors.black)
+	term.setCursorPos(oldX, oldY)
+	term.setTextColor(oldF)
+	term.setBackgroundColor(oldB)
 end
-function term.pause(text, useWrite)
-	if not useWrite then
+function term.pause(text, writeMode)
+	if not writeMode then
 		print(tostring(text or "..."))
 		term.lineBefore()
 	else
 		term.write(tostring(text or "..."))
 	end
-	while true do
-		local event, p1, p2, p3, p4, p5 = os.pullEvent()
-		if event == "key" then
-			return
+	os.pullEvent("key")
+end
+function term.more(text)
+	term.wash()
+	local lns = string.split(text, "\n")
+	for k, l in pairs(lns) do
+		print(l);
+		if string.isBlank(l) then
+			term.log(true, "--More--")
+			term.log(false, "")
 		end
 	end
 end
@@ -144,6 +152,13 @@ function fs.readDir(path, recursive)
 	return fs.mex.okRead, files
 end
 
+function math.sum(tab, i)
+	local sum = 0
+	for j=1, i do
+		sum = sum + tab[j]
+	end
+	return sum
+end
 function math.center(p1, p2, length)
 	return math.floor((p1 + p2) / 2) - math.floor(length / 2)
 end
@@ -279,6 +294,9 @@ function string.contains(self, str)
 		return false
 	end
 end
+function string.firstUpper(self)
+	return string.upper(string.chars(self)[1]) .. string.sub(self, 2)
+end
 function string.lenX(self)
 	local m = -1
 	for i, l in pairs(string.split(self, "\n")) do
@@ -294,9 +312,75 @@ function string.lenY(self)
 	return table.len(string.split(self, "\n"))
 end
 function string.isBlank(self)
-	return self ~= nil and self:match("%S") ~= nil
+	return self == nil or #self == 0 or string.match(self, [[^%s+$]]) ~= nil
+end
+function string.negSub(self, from, to)
+	local str = ""
+	for i, c in pairs(string.chars(self)) do
+		if i < from or i > to then
+			str = str .. c
+		end
+	end
+	return str
+end
+function string.multimatch(self, ...)
+	local resS, resP = {}, {}
+	local noFind, first, temp, found, mi, mk
+	local last = 1
+	
+	repeat
+		noFind = true
+		temp = {}
+		for kp, pat in pairs(arg) do
+			found = {string.find(self, pat, last)}
+			--{start, end, matches...} or {nil}
+			if #found > 0 then
+				noFind = false
+				--add which pattern is found
+				found.pat = kp
+				table.insert(temp, found)
+			end
+		end
+		if #temp > 0 then
+			if #temp == 1 then
+				first = temp[1]
+			else
+				mk = 1
+				mi = temp[1][1]
+				for k, pat in pairs(temp) do
+					--find which pattern has lower start index
+					if k > 1 and pat[1] < mi then
+						mi = pat[1]
+						mk = k
+					end
+				end
+				first = temp[mk]
+			end
+			last = first[2] + 1
+			table.insert(resS, string.sub(self, first[1], first[2]))
+			table.insert(resP, first.pat)
+		end
+	until noFind
+	
+	--[[
+	Example:
+	{
+		{"A", "B", "C"},
+		{1, 2, 1} (first, second and first pattern found)
+	}
+	]]
+	return {resS, resP}
 end
 
+--[[Sample Lambda Functions
+table.first(
+	table,
+	function(key, value, custom1, custom2, ...)
+		return key == custom1 and value[1] == custom2
+	end,
+	myKey,
+	myValue)
+]]
 function table.len(self, includeNil)
 	includeNil = includeNil or false
 	local c = 0
@@ -397,42 +481,45 @@ function table.where(self, lambda, ...)
 			ret[k] = v
 		end
 	end
-	return ret
+	return table.len(ret) > 0 and ret or nil
 end
 function table.allToString(self)
+	if not self then
+		return {"<all nil>"}
+	end
 	for k, v in pairs(self) do
 		self[k] = tostring(v)
 	end
 	return self
 end
 
-function rPrint(s, l, i)		-- recursive Print (structure, limit, indent)
-	l = l or 100;
+function rPrint(s, d, i)		-- recursive Print (structure, maxDepth, indent)
+	d = d or 10;
 	i = i or "";				-- default item limit, indent string
-	os.sleep(0.1)
 	
-	if l < 1 then
-		print("ERROR: Item limit reached.")
-		return l-1
+	if d < 0 then
+		return
 	end
 	local ts = type(s)
 	if ts ~= "table" then
-		term.log(true, i, ts, tostring(s))
-		return l - 1
+		term.log(true, i, tostring(s))
+		return
 	end
 	term.log(true, i, ts)
 	for k, v in pairs(s) do		-- print "[KEY] VALUE"
-		if k ~= "parent" and k ~= "bind" and v ~= s then
-			l = rPrint(v, l, i .. "." .. tostring(k))
-			if l < 0 then
+		if v ~= s then
+			rPrint(v, d - 1, i .. " " .. tostring(k))
+			if d < 0 then
 				break
 			end
 		end
 	end
-	return l
 end
-function objDebug(obj, prefix)
-	rPrint(obj, nil, prefix)
+function objDebug(obj, prefix, depth)
+	rPrint(obj, depth, prefix)
 	term.log(false, "OBJECT END")
-	os.sleep(1)
+	os.sleep(0.35)
+end
+function toInt(str)
+	return tonumber(string.remChars(str:upper(), ".,xABCDEF")) or 0
 end
