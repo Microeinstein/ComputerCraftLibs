@@ -33,6 +33,27 @@ function term.printc(fg, bg, ...)
 	end
 	term.lineBefore()
 end
+--[[function term.printec(str)
+	local p = nil
+	local l = nil
+	repeat
+		p, l = string.find(str, "%e%d+m")
+		if p ~= nil then
+			if p > 1 then
+				print(string.sub(str, 1, p + 1))
+				term.lineBefore()
+			end
+			local color = tonumber(string.sub(str, p + 3, l - 1))
+			if term.isColor() then
+				term.setTextColor(color)
+			end
+			str = string.sub(str, 1, p + l)
+		else
+			print(str)
+			term.lineBefore()
+		end
+	until p == nil
+end]]
 function term.log(pause, ...)
 	local oldX, oldY = term.getCursorPos()
 	local oldF, oldB = term.getTextColor(), term.getBackgroundColor()
@@ -62,6 +83,20 @@ function term.pause(text, writeMode)
 		term.write(tostring(text or "..."))
 	end
 	os.pullEvent("key")
+end
+function term.pausec(fg, bg, text)
+	if term.isColor() then
+		local fc, bc = term.getTextColor(), term.getBackgroundColor()
+		term.setTextColor(fg or fc)
+		term.setBackgroundColor(bg or bc)
+		term.pause(text, true)
+		term.setTextColor(fc)
+		term.setBackgroundColor(bc)
+	else
+		term.pause(text, true)
+	end
+	print("")
+	term.lineBefore()
 end
 function term.more(text)
 	term.wash()
@@ -152,6 +187,9 @@ function fs.readDir(path, recursive)
 	return fs.mex.okRead, files
 end
 
+function math.round(num)
+	return math.floor(num + .5)
+end
 function math.sum(tab, i)
 	local sum = 0
 	for j=1, i do
@@ -522,4 +560,7 @@ function objDebug(obj, prefix, depth)
 end
 function toInt(str)
 	return tonumber(string.remChars(str:upper(), ".,xABCDEF")) or 0
+end
+function isBool(a)
+	return not not a == a
 end
